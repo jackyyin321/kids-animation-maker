@@ -627,7 +627,7 @@ class AnimationMaker {
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
-                workerScript: 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js',
+                workerScript: 'gif.worker.js',
                 debug: true
             });
 
