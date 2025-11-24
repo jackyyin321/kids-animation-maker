@@ -176,21 +176,37 @@ class AnimationMaker {
                     file.type === 'image/heif';
 
                 if (isHEIC) {
+                    // Check if heic2any library is loaded
+                    if (typeof heic2any === 'undefined') {
+                        console.error('heic2any library not loaded');
+                        this.showToast('❌ HEIC转换库未加载，请刷新页面重试', 'error');
+                        continue;
+                    }
+
                     // Convert HEIC to JPEG
                     try {
                         this.loadingText.textContent = `正在转换 ${file.name}...`;
+                        console.log('Starting HEIC conversion for:', file.name);
+
                         const convertedBlob = await heic2any({
                             blob: file,
                             toType: 'image/jpeg',
                             quality: 0.9
                         });
 
+                        console.log('HEIC conversion successful');
+
                         // heic2any might return an array of blobs for multi-page HEIC
                         const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
                         processedFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
                     } catch (conversionError) {
                         console.error('HEIC conversion error:', conversionError);
-                        this.showToast(`❌ 无法转换 ${file.name}`, 'error');
+                        console.error('Error details:', {
+                            name: conversionError.name,
+                            message: conversionError.message,
+                            stack: conversionError.stack
+                        });
+                        this.showToast(`❌ 无法转换 ${file.name}: ${conversionError.message || '未知错误'}`, 'error');
                         continue;
                     }
                 }
