@@ -1,4 +1,4 @@
-// Animation Maker - Main Application
+// Animation Maker - Main Application with HEIC Support
 class AnimationMaker {
     constructor() {
         this.frames = [];
@@ -155,18 +155,53 @@ class AnimationMaker {
     }
 
     async handleFiles(files) {
-        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        const allFiles = Array.from(files);
 
-        if (imageFiles.length === 0) {
+        if (allFiles.length === 0) {
             this.showToast('❌ 请选择图片文件', 'error');
             return;
         }
 
         this.showLoading('正在加载照片...');
+        let successCount = 0;
 
-        for (const file of imageFiles) {
+        for (const file of allFiles) {
             try {
-                const imageData = await this.readFileAsDataURL(file);
+                let processedFile = file;
+
+                // Check if file is HEIC/HEIF format
+                const isHEIC = file.name.toLowerCase().endsWith('.heic') ||
+                    file.name.toLowerCase().endsWith('.heif') ||
+                    file.type === 'image/heic' ||
+                    file.type === 'image/heif';
+
+                if (isHEIC) {
+                    // Convert HEIC to JPEG
+                    try {
+                        this.loadingText.textContent = `正在转换 ${file.name}...`;
+                        const convertedBlob = await heic2any({
+                            blob: file,
+                            toType: 'image/jpeg',
+                            quality: 0.9
+                        });
+
+                        // heic2any might return an array of blobs for multi-page HEIC
+                        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                        processedFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+                    } catch (conversionError) {
+                        console.error('HEIC conversion error:', conversionError);
+                        this.showToast(`❌ 无法转换 ${file.name}`, 'error');
+                        continue;
+                    }
+                }
+
+                // Check if it's an image file
+                if (!processedFile.type.startsWith('image/')) {
+                    continue;
+                }
+
+                this.loadingText.textContent = '正在加载照片...';
+                const imageData = await this.readFileAsDataURL(processedFile);
                 const frame = {
                     id: 'frame-' + Date.now() + '-' + Math.random(),
                     imageData: imageData,
@@ -175,6 +210,7 @@ class AnimationMaker {
                     audio: null
                 };
                 this.frames.push(frame);
+                successCount++;
             } catch (error) {
                 console.error('Error loading image:', error);
             }
@@ -183,8 +219,11 @@ class AnimationMaker {
         this.hideLoading();
         this.renderTimeline();
         this.updateCanvas();
-        this.showToast(`✅ 已添加 ${imageFiles.length} 张照片`, 'success');
-        this.playSound('upload');
+
+        if (successCount > 0) {
+            this.showToast(`✅ 已添加 ${successCount} 张照片`, 'success');
+            this.playSound('upload');
+        }
     }
 
     readFileAsDataURL(file) {
