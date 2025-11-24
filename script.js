@@ -615,44 +615,81 @@ class AnimationMaker {
             return;
         }
 
+        // Check if GIF library is loaded
+        if (typeof GIF === 'undefined') {
+            this.showToast('❌ GIF库未加载,请刷新页面重试', 'error');
+            return;
+        }
+
         this.showLoading('正在生成GIF...');
 
         try {
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
-                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+                workerScript: 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js',
+                debug: true
             });
 
-            for (const frame of this.frames) {
-                const img = await this.loadImage(frame.imageData);
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
+            // Add error handler BEFORE adding frames
+            gif.on('error', (error) => {
+                console.error('GIF generation error:', error);
+                this.hideLoading();
+                this.showToast('❌ GIF生成失败,请尝试减少帧数', 'error');
+            });
 
-                gif.addFrame(canvas, { delay: frame.duration });
+            gif.on('progress', (p) => {
+                this.loadingText.textContent = `正在生成GIF... ${Math.round(p * 100)}%`;
+            });
+
+            // Add frames
+            for (const frame of this.frames) {
+                try {
+                    const img = await this.loadImage(frame.imageData);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    gif.addFrame(canvas, { delay: frame.duration });
+                } catch (frameError) {
+                    console.error('Error loading frame:', frameError);
+                    this.hideLoading();
+                    this.showToast('❌ 加载帧失败', 'error');
+                    return;
+                }
             }
 
             gif.on('finished', (blob) => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `animation-${Date.now()}.gif`;
-                a.click();
-                URL.revokeObjectURL(url);
+                try {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `animation-${Date.now()}.gif`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
 
-                this.hideLoading();
-                this.showToast('🎉 GIF已导出', 'success');
-                this.playSound('success');
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+
+                    this.hideLoading();
+                    this.showToast('🎉 GIF已导出', 'success');
+                    this.playSound('success');
+                } catch (downloadError) {
+                    console.error('Download error:', downloadError);
+                    this.hideLoading();
+                    this.showToast('❌ 下载失败', 'error');
+                }
             });
 
+            // Start rendering
             gif.render();
+
         } catch (error) {
             console.error('Error exporting GIF:', error);
             this.hideLoading();
-            this.showToast('❌ 导出失败', 'error');
+            this.showToast('❌ 导出失败: ' + (error.message || '未知错误'), 'error');
         }
     }
 
