@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 我的动画工作室 🎨</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎬 我的动画工作室 🎨</h1>
+        </header>
+
+        <!-- Upload Area -->
+        <section class="upload-section">
+            <div id="dropZone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="upload-icon">📸</div>
+                    <p class="upload-text">拖放照片到这里</p>
+                    <p class="upload-subtext">或者</p>
+                    <button id="selectFilesBtn" class="btn-primary">📁 选择照片</button>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preview Area -->
+        <section class="preview-section">
+            <div class="preview-container">
+                <canvas id="previewCanvas" class="preview-canvas"></canvas>
+                <div id="playButton" class="play-button">
+                    <span class="play-icon">▶️</span>
+                </div>
+                <div id="playingIndicator" class="playing-indicator hidden">
+                    <span>播放中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="timeline-section">
+            <div class="timeline-header">
+                <h2>📽️ 时间轴</h2>
+                <div class="timeline-info">
+                    <span id="frameCount">0 帧</span>
+                </div>
+            </div>
+            <div id="timeline" class="timeline">
+                <div class="timeline-empty">
+                    <p>👆 上传照片开始创作吧！</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="controls-section">
+            <div class="control-group">
+                <label class="control-label">
+                    <span class="label-icon">⏱️</span>
+                    <span class="label-text">所有帧时长</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="globalDuration" class="slider" min="100" max="3000" value="500" step="100">
+                    <span id="globalDurationValue" class="slider-value">0.5秒</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-checkbox">
+                    <input type="checkbox" id="loopCheckbox" checked>
+                    <span class="checkbox-icon">🔁</span>
+                    <span class="checkbox-text">循环播放</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Export Buttons -->
+        <section class="export-section">
+            <button id="saveProjectBtn" class="btn-export">
+                <span class="btn-icon">💾</span>
+                <span class="btn-text">保存项目</span>
+            </button>
+            <button id="loadProjectBtn" class="btn-export">
+                <span class="btn-icon">📂</span>
+                <span class="btn-text">加载项目</span>
+            </button>
+            <button id="exportGifBtn" class="btn-export">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">导出GIF</span>
+            </button>
+            <button id="exportVideoBtn" class="btn-export">
+                <span class="btn-icon">🎬</span>
+                <span class="btn-text">导出视频</span>
+            </button>
+            <input type="file" id="loadProjectInput" accept=".json" hidden>
+        </section>
+    </div>
+
+    <!-- Frame Edit Modal -->
+    <div id="frameModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ 编辑帧</h3>
+                <button class="modal-close">❌</button>
+            </div>
+            <div class="modal-body">
+                <img id="modalFrameImage" class="modal-frame-image" alt="Frame">
+
+                <div class="modal-control">
+                    <label class="control-label">
+                        <span class="label-icon">⏱️</span>
+                        <span class="label-text">这一帧的时长</span>
+                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="frameDuration" class="slider" min="100" max="3000" value="500"
+                            step="100">
+                        <span id="frameDurationValue" class="slider-value">0.5秒</span>
+                    </div>
+                </div>
+
+                <div class="modal-control">
+                    <label class="control-label">
+                        <span class="label-icon">🎤</span>
+                        <span class="label-text">音频</span>
+                    </label>
+                    <div class="audio-controls">
+                        <button id="recordAudioBtn" class="btn-audio">
+                            <span>🎤 录音</span>
+                        </button>
+                        <button id="uploadAudioBtn" class="btn-audio">
+                            <span>🎵 上传</span>
+                        </button>
+                        <button id="playAudioBtn" class="btn-audio hidden">
+                            <span>▶️ 播放</span>
+                        </button>
+                        <button id="deleteAudioBtn" class="btn-audio hidden">
+                            <span>🗑️ 删除</span>
+                        </button>
+                        <input type="file" id="audioFileInput" accept="audio/*" hidden>
+                    </div>
+                    <div id="recordingIndicator" class="recording-indicator hidden">
+                        <span class="recording-dot">🔴</span>
+                        <span>录音中... <span id="recordingTime">0</span>秒</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="applyFrameChanges" class="btn-primary">✅ 完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner">🎨</div>
+            <p id="loadingText">处理中...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
