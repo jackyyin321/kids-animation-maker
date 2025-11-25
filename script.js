@@ -206,7 +206,25 @@ class AnimationMaker {
                             message: conversionError.message,
                             stack: conversionError.stack
                         });
-                        this.showToast(`❌ 无法转换 ${file.name}: ${conversionError.message || '未知错误'}`, 'error');
+
+                        // Provide specific error messages based on error type
+                        let errorMessage = `❌ 无法转换 ${file.name}`;
+
+                        if (conversionError.message && conversionError.message.includes('format not supported')) {
+                            errorMessage = `❌ ${file.name} 使用了不支持的HEIC编码格式。\n\n💡 建议：\n1. 在iPhone上转换为JPG后再上传\n2. 或使用在线转换工具：https://heictojpg.com\n3. 或直接上传JPG/PNG格式的照片`;
+                            this.showToast(errorMessage, 'error');
+                            // Show a more detailed alert for the first unsupported file
+                            if (!this.heicWarningShown) {
+                                this.heicWarningShown = true;
+                                setTimeout(() => {
+                                    alert('⚠️ HEIC格式提示\n\n您的HEIC文件使用了不支持的编码格式。\n\n建议解决方案：\n\n1. 在iPhone设置中：\n   设置 → 相机 → 格式 → 选择"最兼容"\n   这样新拍的照片会自动保存为JPG格式\n\n2. 或使用在线转换工具：\n   https://heictojpg.com\n\n3. 或直接上传JPG/PNG格式的照片');
+                                }, 500);
+                            }
+                        } else {
+                            errorMessage = `❌ 无法转换 ${file.name}: ${conversionError.message || '未知错误'}`;
+                            this.showToast(errorMessage, 'error');
+                        }
+
                         continue;
                     }
                 }
