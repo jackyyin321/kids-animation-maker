@@ -37,6 +37,8 @@ class AnimationMaker {
         this.globalDurationSlider = document.getElementById('globalDuration');
         this.globalDurationValue = document.getElementById('globalDurationValue');
         this.loopCheckbox = document.getElementById('loopCheckbox');
+        this.gifQualitySlider = document.getElementById('gifQuality');
+        this.gifQualityValue = document.getElementById('gifQualityValue');
 
         // Export elements
         this.saveProjectBtn = document.getElementById('saveProjectBtn');
@@ -109,6 +111,20 @@ class AnimationMaker {
         // Loop checkbox
         this.loopCheckbox.addEventListener('change', (e) => {
             this.loop = e.target.checked;
+        });
+
+        // GIF quality slider
+        this.gifQualitySlider.addEventListener('input', (e) => {
+            const quality = parseInt(e.target.value);
+            let qualityText = quality.toString();
+            if (quality === 10) {
+                qualityText += ' (推荐)';
+            } else if (quality <= 5) {
+                qualityText += ' (文件小,质量低)';
+            } else if (quality >= 20) {
+                qualityText += ' (文件大,质量高)';
+            }
+            this.gifQualityValue.textContent = qualityText;
         });
 
         // Export buttons
@@ -658,12 +674,15 @@ class AnimationMaker {
         this.showLoading('正在生成GIF...');
 
         try {
+            const quality = parseInt(this.gifQualitySlider.value);
             const gif = new GIF({
                 workers: 2,
-                quality: 10,
+                quality: quality,
                 workerScript: 'gif.worker.js',
                 debug: true
             });
+
+            console.log('GIF quality setting:', quality);
 
             // Add error handler BEFORE adding frames
             gif.on('error', (error) => {
